@@ -58,10 +58,56 @@ def _preprocess_data(data):
     # ---------------------------------------------------------------
 
     # ----------- Replace this code with your own preprocessing steps --------
-    predict_vector = feature_vector_df[['Madrid_wind_speed','Bilbao_rain_1h','Valencia_wind_speed']]
+    ## feature enginnering
+    # adding other time data
+    feature_vector_df['time'] = pd.to_datetime(feature_vector_df['time'])
+    feature_vector_df['year'] = feature_vector_df['time'].dt.year
+    feature_vector_df['month'] = feature_vector_df['time'].dt.month
+    feature_vector_df['day'] = feature_vector_df['time'].dt.day
+    feature_vector_df['hour'] = feature_vector_df['time'].dt.hour
+    feature_vector_df['second'] = feature_vector_df['time'].dt.second
+    feature_vector_df['minute'] = feature_vector_df['time'].dt.minute
+
+    # Fill null values with 0
+    feature_vector_df = feature_vector_df.fillna(0)
+
+
+    # converting text data to type int
+    feature_vector_df['Valencia_wind_deg'] = feature_vector_df.Valencia_wind_deg.apply(lambda x: x.split('_')[1])
+    feature_vector_df['Valencia_wind_deg'] = feature_vector_df['Valencia_wind_deg'].astype('int')
+
+    feature_vector_df['Seville_pressure'] = feature_vector_df.Seville_pressure.str.strip('sp')
+    feature_vector_df['Seville_pressure'] = feature_vector_df['Seville_pressure'].astype('int')
+
+    # scale our numeric variables
+    from sklearn.preprocessing import StandardScaler
+
+    
+    predict_vector = feature_vector_df[['Madrid_wind_speed', 'Valencia_wind_deg', 'Bilbao_rain_1h',
+       'Valencia_wind_speed', 'Seville_humidity', 'Madrid_humidity',
+       'Bilbao_clouds_all', 'Bilbao_wind_speed', 'Seville_clouds_all',
+       'Bilbao_wind_deg', 'Barcelona_wind_speed', 'Barcelona_wind_deg',
+       'Madrid_clouds_all', 'Seville_wind_speed', 'Barcelona_rain_1h',
+       'Seville_pressure', 'Seville_rain_1h', 'Bilbao_snow_3h',
+       'Barcelona_pressure', 'Seville_rain_3h', 'Madrid_rain_1h',
+       'Barcelona_rain_3h', 'Valencia_snow_3h', 'Madrid_weather_id',
+       'Barcelona_weather_id', 'Bilbao_pressure', 'Seville_weather_id',
+       'Valencia_pressure', 'Seville_temp_max', 'Madrid_pressure',
+       'Valencia_temp_max', 'Valencia_temp', 'Bilbao_weather_id',
+       'Seville_temp', 'Valencia_humidity', 'Valencia_temp_min',
+       'Barcelona_temp_max', 'Madrid_temp_max', 'Barcelona_temp',
+       'Bilbao_temp_min', 'Bilbao_temp', 'Barcelona_temp_min',
+       'Bilbao_temp_max', 'Seville_temp_min', 'Madrid_temp', 'Madrid_temp_min',
+       'year', 'month', 'day', 'hour', 'minute', 'second']]
+    
+
+    scaler = StandardScaler()
+    cols = predict_vector.columns
+    predict_vector = scaler.fit_transform(predict_vector)
+    predict_vector = pd.DataFrame(predict_vector, columns=cols)
     # ------------------------------------------------------------------------
 
-    return predict_vector
+    return predict_vector.to_numpy()
 
 def load_model(path_to_model:str):
     """Adapter function to load our pretrained model into memory.
@@ -107,4 +153,4 @@ def make_prediction(data, model):
     # Perform prediction with model and preprocessed data.
     prediction = model.predict(prep_data)
     # Format as list for output standardisation.
-    return prediction[0].tolist()
+    return prediction[0]
